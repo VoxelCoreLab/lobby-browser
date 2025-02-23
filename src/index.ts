@@ -14,6 +14,10 @@ interface Lobby {
 // Store active lobbies
 let lobbies: Lobby[] = [];
 
+app.get('/', (req: Request, res: Response) => {
+  res.send('Lobby Browser Server Running');
+});
+
 app.post("/createLobby", (req: Request, res: Response) => {
     const { ip, port, name } = req.body;
     lobbies.push({ ip, port, name });

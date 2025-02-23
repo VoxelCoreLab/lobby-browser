@@ -1,0 +1,26 @@
+### Create a New Lobby
+POST http://localhost:3000/createLobby
+Content-Type: application/json
+
+{
+  "ip": "192.168.1.100",
+  "port": 8080,
+  "name": "Test Lobby"
+}
+
+### Get Lobbies After Creation
+GET http://localhost:3000/getLobbies
+
+
+### Create Another Lobby
+POST http://localhost:3000/createLobby
+Content-Type: application/json
+
+{
+  "ip": "10.0.0.5",
+  "port": 3000,
+  "name": "Second Lobby"
+}
+
+### Get Lobbies After Second Creation
+GET http://localhost:3000/getLobbies
