@@ -34,4 +34,4 @@ jobs:
         with:
           name: API Tests
           path: test-results.xml
-          reporter: junit
+          reporter: jest-junit
