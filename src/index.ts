@@ -25,7 +25,7 @@ app.post("/createLobby", (req: Request, res: Response) => {
 });
 
 app.get("/getLobbies", (req: Request, res: Response) => {
-    res.send(lobbies);
+    res.send({ results: lobbies});
 });
 
 const port = configService.get('PORT', 3000)
