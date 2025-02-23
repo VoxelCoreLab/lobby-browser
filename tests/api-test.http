@@ -7,9 +7,13 @@ Content-Type: application/json
   "port": 8080,
   "name": "Test Lobby"
 }
+?? status == 200
+?? body success isBoolean
 
 ### Get Lobbies After Creation
 GET http://localhost:3000/getLobbies
+?? status == 200
+?? body results isArray
 
 
 ### Create Another Lobby
@@ -21,6 +25,10 @@ Content-Type: application/json
   "port": 3000, 
   "name": "Second Lobby"
 }
+?? status == 200
+?? body success isBoolean
 
 ### Get Lobbies After Second Creation
 GET http://localhost:3000/getLobbies
+?? status == 200
+?? body results isArray
