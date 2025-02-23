@@ -18,13 +18,13 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Lobby Browser Server Running');
 });
 
-app.post("/createLobby", (req: Request, res: Response) => {
+app.post("/lobbies", (req: Request, res: Response) => {
     const { ip, port, name } = req.body;
     lobbies.push({ ip, port, name });
     res.send({ success: true });
 });
 
-app.get("/getLobbies", (req: Request, res: Response) => {
+app.get("/lobbies", (req: Request, res: Response) => {
     res.send({ results: lobbies});
 });
 
