@@ -11,7 +11,7 @@
     "test:api": "httpyac run --all tests/api-test.http",
     
     "ci": "start-server-and-test 'npm run start' http://localhost:3000 'npm run ci:test'",
-    "ci:test": "httpyac run --all tests/api-test.http --junit -o short > test-results.xml"
+    "ci:test": "httpyac run --all tests/api-test.http --junit > test-results.xml"
   },
   "repository": {
     "type": "git",
