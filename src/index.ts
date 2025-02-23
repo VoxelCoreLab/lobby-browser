@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { configService } from './config';
 
 const app = express();
 app.use(express.json());
@@ -23,4 +24,6 @@ app.get("/getLobbies", (req: Request, res: Response) => {
     res.send(lobbies);
 });
 
-app.listen(3000, () => console.log("Lobby-Server läuft auf Port 3000"));
+const port = configService.get('PORT', 3000)
+
+app.listen(port, () => console.log(`Lobby-Server läuft auf Port ${port}`));
