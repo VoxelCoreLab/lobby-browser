@@ -7,7 +7,11 @@
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:api",
+    "test:api": "httpyac run --all tests/api-test.http",
+    
+    "ci": "start-server-and-test 'npm run start' http://localhost:3000 'npm run ci:test'",
+    "ci:test": "httpyac run --all tests/api-test.http --junit -o short > test-results.xml"
   },
   "repository": {
     "type": "git",
@@ -27,6 +31,8 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.5",
+    "httpyac": "^6.16.6",
+    "start-server-and-test": "^2.0.10",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
