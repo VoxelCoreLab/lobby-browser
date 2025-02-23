@@ -28,8 +28,10 @@ jobs:
       - name: Run API tests
         run: npm run ci
 
-      - name: Upload test report
-        uses: actions/upload-artifact@v3
+      - name: Publish JUnit Test Report
+        if: always()
+        uses: dorny/test-reporter@v1
         with:
-          name: test-report
+          name: API Tests
           path: test-results.xml
+          reporter: junit
