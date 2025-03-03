@@ -3,6 +3,7 @@ import { configService } from './config';
 
 const app = express();
 app.use(express.json());
+app.set('trust proxy', true);
 
 // Define an interface for a lobby
 interface Lobby {
@@ -19,7 +20,17 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.post("/lobbies", (req: Request, res: Response) => {
-    const { ip, port, name } = req.body;
+    let ip = req.body.ip || req.ip;
+
+    if (!ip) {
+      res.status(400).send({ success: false, error: "No IP provided" });
+      return;
+    }
+
+    if (ip.startsWith("::ffff:")) {
+        ip = ip.replace("::ffff:", "");
+    }
+    const { port, name } = req.body;
     lobbies.push({ ip, port, name });
     res.send({ success: true });
 });
