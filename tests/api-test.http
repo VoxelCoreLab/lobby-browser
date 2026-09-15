@@ -1,34 +1,79 @@
 ### Create a New Lobby
+# @name createLobby
 POST http://localhost:3000/lobbies
 Content-Type: application/json
 
 {
-  "ip": "192.168.1.100",
+  "host": "192.168.1.100",
   "port": 8080,
-  "name": "Test Lobby"
+  "name": "Test Lobby",
+  "version": "1.0.0",
+  "maxPlayers": 8
 }
 ?? status == 200
 ?? body success isBoolean
+?? body id isString
+?? body token isString
 
 ### Get Lobbies After Creation
 GET http://localhost:3000/lobbies
 ?? status == 200
 ?? body results isArray
 
+### Update Lobby Player Count
+PATCH http://localhost:3000/lobbies/{{createLobby.id}}
+Authorization: Bearer {{createLobby.token}}
+Content-Type: application/json
 
-### Create Another Lobby
+{
+  "playerCount": 3,
+  "status": "online"
+}
+?? status == 200
+?? body success isBoolean
+
+### Create Another Lobby (discovered host)
+# @name createSecond
 POST http://localhost:3000/lobbies
 Content-Type: application/json
 
 {
-  "port": 3000, 
-  "name": "Second Lobby"
+  "port": 3000,
+  "name": "Second Lobby",
+  "version": "1.0.0"
 }
-
 ?? status == 200
 ?? body success isBoolean
+?? body id isString
+?? body token isString
 
 ### Get Lobbies After Second Creation
 GET http://localhost:3000/lobbies
 ?? status == 200
 ?? body results isArray
+
+### Mark First Lobby Offline
+PATCH http://localhost:3000/lobbies/{{createLobby.id}}
+Authorization: Bearer {{createLobby.token}}
+Content-Type: application/json
+
+{
+  "status": "offline"
+}
+?? status == 200
+?? body success isBoolean
+
+### Delete First Lobby
+DELETE http://localhost:3000/lobbies/{{createLobby.id}}
+Authorization: Bearer {{createLobby.token}}
+?? status == 200
+?? body success isBoolean
+
+### Reject Update Without Token
+PATCH http://localhost:3000/lobbies/{{createSecond.id}}
+Content-Type: application/json
+
+{
+  "playerCount": 1
+}
+?? status == 401
