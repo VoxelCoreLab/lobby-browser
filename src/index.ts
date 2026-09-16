@@ -19,6 +19,7 @@ interface Lobby {
   status: LobbyStatus;
   createdAt: number;
   lastSeen: number;
+  ttlMs: number;
   ownerToken: string;
 }
 
@@ -37,15 +38,36 @@ interface PublicLobby {
 
 let lobbies: Lobby[] = [];
 
-const EXPIRATION_MS = 300_000;
+const MIN_TTL_MS = 60_000;
+const MAX_TTL_MS = 1_800_000;
+const DEFAULT_TTL_MS = configService.get('LOBBY_TTL_MS', 600_000);
+const SWEEP_MS = 30_000;
 const DEFAULT_MAX_PLAYERS = 8;
+
+function clampTtlMs(ttlMs: number): number {
+  if (ttlMs < MIN_TTL_MS) return MIN_TTL_MS;
+  if (ttlMs > MAX_TTL_MS) return MAX_TTL_MS;
+  return ttlMs;
+}
+
+/** Parse body.ttlSeconds into clamped ms, or null if omitted / invalid shape handled by caller. */
+function parseTtlSeconds(raw: unknown): number | null {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const seconds = Number(raw);
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  return clampTtlMs(seconds * 1000);
+}
+
+function isFresh(lobby: Lobby, now: number): boolean {
+  return now - lobby.lastSeen < lobby.ttlMs;
+}
 
 function normalizeHost(raw: string): string {
   return raw.startsWith('::ffff:') ? raw.replace('::ffff:', '') : raw;
 }
 
 function toPublic(lobby: Lobby): PublicLobby {
-  const { ownerToken: _token, ...publicLobby } = lobby;
+  const { ownerToken: _token, ttlMs: _ttlMs, ...publicLobby } = lobby;
   return publicLobby;
 }
 
@@ -94,7 +116,7 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 app.post('/lobbies', (req: Request, res: Response) => {
-  const { name, port, version, maxPlayers } = req.body ?? {};
+  const { name, port, version, maxPlayers, ttlSeconds } = req.body ?? {};
   const rawHost = req.body?.host || req.body?.ip || req.ip;
 
   if (!name || typeof name !== 'string' || !name.trim()) {
@@ -127,9 +149,18 @@ app.post('/lobbies', (req: Request, res: Response) => {
     }
   }
 
+  if (ttlSeconds !== undefined && ttlSeconds !== null && ttlSeconds !== '') {
+    const seconds = Number(ttlSeconds);
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      res.status(400).send({ success: false, error: 'ttlSeconds must be a positive number' });
+      return;
+    }
+  }
+
   const now = Date.now();
   const id = crypto.randomUUID();
   const ownerToken = crypto.randomBytes(32).toString('hex');
+  const ttlMs = parseTtlSeconds(ttlSeconds) ?? clampTtlMs(DEFAULT_TTL_MS);
 
   const lobby: Lobby = {
     id,
@@ -142,6 +173,7 @@ app.post('/lobbies', (req: Request, res: Response) => {
     status: 'online',
     createdAt: now,
     lastSeen: now,
+    ttlMs,
     ownerToken,
   };
 
@@ -150,7 +182,9 @@ app.post('/lobbies', (req: Request, res: Response) => {
 });
 
 app.get('/lobbies', (_req: Request, res: Response) => {
-  res.send({ results: lobbies.map(toPublic) });
+  const now = Date.now();
+  const fresh = lobbies.filter((lobby) => isFresh(lobby, now));
+  res.send({ results: fresh.map(toPublic) });
 });
 
 app.patch('/lobbies/:id', (req: Request, res: Response) => {
@@ -219,6 +253,15 @@ app.patch('/lobbies/:id', (req: Request, res: Response) => {
     lobby.status = body.status;
   }
 
+  if (body.ttlSeconds !== undefined && body.ttlSeconds !== null && body.ttlSeconds !== '') {
+    const seconds = Number(body.ttlSeconds);
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      res.status(400).send({ success: false, error: 'ttlSeconds must be a positive number' });
+      return;
+    }
+    lobby.ttlMs = clampTtlMs(seconds * 1000);
+  }
+
   lobby.lastSeen = Date.now();
   res.send({ success: true, lobby: toPublic(lobby) });
 });
@@ -237,5 +280,5 @@ app.listen(port, () => console.log(`Lobby-Server läuft auf Port ${port}`));
 
 setInterval(() => {
   const now = Date.now();
-  lobbies = lobbies.filter((lobby) => now - lobby.lastSeen < EXPIRATION_MS);
-}, EXPIRATION_MS);
+  lobbies = lobbies.filter((lobby) => isFresh(lobby, now));
+}, SWEEP_MS);
