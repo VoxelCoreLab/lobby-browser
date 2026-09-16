@@ -10,6 +10,7 @@ dotenv.config();
 interface ConfigVars {
   PORT: number;
   DB_URL: string;
+  LOBBY_TTL_MS: number;
 }
 
 /**
@@ -27,6 +28,13 @@ const converters: {
     return num;
   },
   DB_URL: (raw: string) => raw,
+  LOBBY_TTL_MS: (raw: string) => {
+    const num = parseInt(raw, 10);
+    if (isNaN(num) || num <= 0) {
+      throw new Error(`Invalid number for LOBBY_TTL_MS: ${raw}`);
+    }
+    return num;
+  },
 };
 
 /**

@@ -19,12 +19,13 @@ Create a lobby. Returns an ownership `token` required for later updates/deletes.
 | `version` | yes | Game version string |
 | `host` or `ip` | no | Connect address; falls back to request IP |
 | `maxPlayers` | no | Defaults to 8 |
+| `ttlSeconds` | no | Seconds without heartbeat before expiry; clamped to 60–1800. Default from `LOBBY_TTL_MS` (600s) |
 
 **Response:** `{ success, id, token }`
 
 ### `GET /lobbies`
 
-List lobbies (no tokens).
+List fresh lobbies (no tokens). Stale entries (`now - lastSeen >= lobby ttl`) are omitted.
 
 **Response:** `{ results: PublicLobby[] }`
 
@@ -34,9 +35,9 @@ Public fields: `id`, `name`, `host`, `port`, `playerCount`, `maxPlayers`, `versi
 
 Update an owned lobby. Auth: `Authorization: Bearer <token>` or body `token`.
 
-Updatable: `name`, `host`/`ip`, `port`, `playerCount`, `maxPlayers`, `status` (`online`\|`offline`), `version`.
+Updatable: `name`, `host`/`ip`, `port`, `playerCount`, `maxPlayers`, `status` (`online`\|`offline`), `version`, `ttlSeconds`.
 
-Refreshes `lastSeen`.
+Refreshes `lastSeen` (acts as heartbeat).
 
 ### `DELETE /lobbies/:id`
 
@@ -44,7 +45,19 @@ Remove an owned lobby (same token auth).
 
 ## TTL
 
-Lobbies expire 5 minutes after their last `lastSeen` update (create or PATCH).
+Each lobby has its own TTL (`ttlMs`), set at create (or updated via PATCH `ttlSeconds`).
+
+- Default: **10 minutes** (`LOBBY_TTL_MS=600000` on the API, overridable).
+- Clamp: **60s–30min**.
+- A lobby stays listed while heartbeats (any successful PATCH) keep `lastSeen` fresh.
+- Sweep runs every **30 seconds**; `GET /lobbies` also filters stale rows.
+
+## Env
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PORT` | `3000` | HTTP listen port |
+| `LOBBY_TTL_MS` | `600000` | Default TTL when create omits `ttlSeconds` |
 
 ## Scripts
 
